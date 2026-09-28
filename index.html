@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة الموهوبين | برامج القياس والتطوير</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { cairo: ['Cairo', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; background: #f8fafc; color: #1e293b; }
+        
+        /* Glass Effect */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Custom Radio Buttons */
+        .custom-radio {
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border: 2px solid #cbd5e1;
+            border-radius: 50%;
+            display: inline-block;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .custom-radio:checked {
+            border-color: #4f46e5;
+            background-color: #4f46e5;
+            box-shadow: inset 0 0 0 4px #ffffff;
+        }
+
+        .option-label {
+            transition: all 0.2s ease;
+        }
+        .option-label:has(input:checked) {
+            background-color: #eef2ff;
+            border-color: #6366f1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+        }
+
+        /* Scale Rating Box */
+        .scale-box { flex: 1; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .scale-box:hover { background-color: #f1f5f9; }
+        .scale-box:has(input:checked) { background-color: #eef2ff; border-color: #6366f1; color: #4338ca; font-weight: 800; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15); }
+
+        /* Smooth scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
+
+        .progress-fill { transition: width 0.4s ease-out; }
+        
+        /* General Fade Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
+        /* Word by Word Animation for Explanation */
+        @keyframes revealWord {
+            0% { opacity: 0; filter: blur(4px); transform: translateY(5px); }
+            100% { opacity: 1; filter: blur(0); transform: translateY(0); }
+        }
+        .word-animate {
+            display: inline-block;
+            opacity: 0;
+            animation: revealWord 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        
+        /* Media Player Enhancements */
+        .media-player-container video {
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            background: #000;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-brand-500 selection:text-white pb-20">
+
+    <!-- Navbar / Header -->
+    <header class="sticky top-0 z-50 glass-panel border-b border-slate-200 shadow-sm hidden" id="test-header">
+        <div class="h-1.5 w-full bg-slate-100">
+            <div id="progress-bar" class="h-full bg-brand-600 progress-fill w-0 rounded-r-full"></div>
+        </div>
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2 overflow-x-auto">
+            <div class="flex items-center gap-3 shrink-0">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-indigo-600 text-white flex items-center justify-center text-lg shadow-md">
+                    <i class="fa-solid fa-lightbulb"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm md:text-base font-black text-slate-900 truncate max-w-[200px] md:max-w-xs" id="header-title">برنامج الموهوبين</h1>
+                    <p class="text-[10px] md:text-xs text-brand-600 font-bold truncate max-w-[200px] md:max-w-xs" id="header-subtitle">وحدة القياس</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3 shrink-0">
+                <!-- Points Gamification -->
+                <div class="text-center bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-amber-600 transition-all duration-300" id="points-box">
+                    <div class="text-[9px] font-black mb-0.5"><i class="fa-solid fa-medal"></i> نقاط الإنجاز</div>
+                    <div class="text-xs font-black" id="points-display">0</div>
+                </div>
+
+                <div class="text-center bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
+                    <div class="text-[9px] text-slate-500 font-bold mb-0.5">التقدم</div>
+                    <div class="text-xs font-black text-slate-800" id="progress-text">0 / 0</div>
+                </div>
+                
+                <div class="text-center bg-brand-50 border border-brand-100 px-4 py-1.5 rounded-xl text-brand-700" id="timer-box">
+                    <div class="text-[9px] font-bold mb-0.5"><i class="fa-regular fa-clock"></i> الوقت المتبقي</div>
+                    <div class="text-sm font-black tracking-wider" id="timer-display">00:00</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow w-full mx-auto p-4 md:p-6 flex flex-col justify-center items-center">
+
+        <!-- VIEW 1: PORTAL LOGIN & TEST SELECTION -->
+        <div id="view-selection" class="w-full flex flex-col items-center animate-fade-in mt-10">
+            
+            <!-- Logo Section -->
+            <div class="text-center space-y-2 mb-8">
+                <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-brand-600 to-indigo-400 shadow-xl flex items-center justify-center text-4xl text-white border border-brand-200 mb-4 transform hover:scale-105 transition duration-300">
+                    <i class="fa-regular fa-lightbulb"></i>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-black text-slate-900">بوابة الموهوبين</h2>
+                <p class="text-sm text-slate-500 font-bold">رحلتك نحو الإبداع تبدأ من هنا.</p>
+            </div>
+
+            <!-- Login Box -->
+            <div class="glass-panel p-6 sm:p-8 rounded-[2rem] space-y-5 shadow-sm w-full max-w-md" id="login-box">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-2">اسم المستخدم الخاص بك</label>
+                    <input type="text" id="taker-username" class="w-full px-4 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-brand-500 text-sm font-black transition shadow-inner text-center tracking-wider" placeholder="أدخل اسم المستخدم للبدء...">
+                </div>
+                <button type="button" onclick="portal.loginAndFetchTests(event)" class="w-full py-4 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-black text-sm shadow-lg shadow-brand-500/30 transition flex items-center justify-center gap-2 transform hover:-translate-y-0.5">
+                    <i class="fa-solid fa-right-to-bracket"></i> <span>تسجيل الدخول للنظام</span>
+                </button>
+                <div id="login-error" class="text-xs font-bold text-rose-500 text-center hidden bg-rose-50 p-3 rounded-xl border border-rose-100">اسم المستخدم غير صحيح أو غير مسجل!</div>
+            </div>
+
+            <!-- Programs Selection Box (Cards Grid) -->
+            <div class="glass-panel p-6 sm:p-8 rounded-[2rem] shadow-sm hidden w-full max-w-3xl" id="tests-box">
+                
+                <!-- Header -->
+                <div class="flex flex-col sm:flex-row items-center justify-between border-b border-slate-100 pb-5 mb-5 gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-user-astronaut"></i></div>
+                        <div>
+                            <h3 class="text-lg font-black text-slate-800" id="welcome-name">مرحباً بك أيها الموهوب</h3>
+                            <p class="text-[11px] text-slate-500 font-bold mt-0.5">اختر البرنامج المراد تنفيذه أو راجع إنجازاتك السابقة.</p>
+                        </div>
+                    </div>
+                    <button onclick="portal.logout()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition shadow-2xs shrink-0">
+                        تسجيل خروج <i class="fa-solid fa-arrow-right-from-bracket ml-1 text-[10px]"></i>
+                    </button>
+                </div>
+                
+                <!-- Grid Container -->
+                <div id="programs-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto custom-scrollbar p-1">
+                    <!-- Program Cards will be injected here dynamically -->
+                </div>
+
+            </div>
+        </div>
+
+        <!-- VIEW 2: TEST INTRODUCTION -->
+        <div id="view-intro" class="w-full max-w-2xl hidden space-y-6 mt-10">
+            <button onclick="portal.goBackToSelection()" class="text-xs font-bold text-slate-500 hover:text-brand-600 flex items-center gap-1.5 transition mb-4 px-2">
+                <i class="fa-solid fa-arrow-right"></i> العودة للقائمة السابقة
+            </button>
+            
+            <div class="glass-panel p-8 rounded-[2rem] space-y-6 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand-500 to-indigo-400"></div>
+                
+                <div class="text-center space-y-3">
+                    <span id="intro-badge" class="px-3 py-1 bg-brand-50 text-brand-700 text-[10px] font-black rounded-full border border-brand-100">برنامج الموهوبين المقنن</span>
+                    <h2 class="text-2xl md:text-3xl font-black text-slate-900 leading-tight" id="intro-title">عنوان البرنامج</h2>
+                    <p class="text-sm text-slate-500 font-bold" id="intro-unit">الوحدة</p>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-100 rounded-2xl p-6 text-sm text-slate-700 leading-relaxed font-semibold text-center shadow-inner" id="intro-text">
+                    تعليمات البرنامج ستظهر هنا...
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-6">
+                    <div class="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                        <i class="fa-regular fa-clock text-2xl text-slate-400 mb-2"></i>
+                        <span class="text-[10px] font-bold text-slate-500">الزمن المخصص</span>
+                        <span class="text-sm font-black text-slate-900 mt-0.5" id="intro-duration">0 دقيقة</span>
+                    </div>
+                    <div class="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                        <i class="fa-solid fa-layer-group text-2xl text-slate-400 mb-2"></i>
+                        <span class="text-[10px] font-bold text-slate-500">عدد المراحل/الأسئلة</span>
+                        <span class="text-sm font-black text-slate-900 mt-0.5" id="intro-q-count">0</span>
+                    </div>
+                </div>
+
+                <button onclick="portal.beginTest()" class="w-full py-4.5 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-black text-base shadow-xl shadow-brand-500/30 transition flex items-center justify-center gap-2 transform hover:-translate-y-0.5">
+                    <i class="fa-solid fa-play"></i> <span>بدء التحدي الآن</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- VIEW 3: SINGLE QUESTION (PAGINATION) -->
+        <div id="view-test" class="w-full max-w-4xl hidden mt-4 pb-12">
+            
+            <div id="single-question-container" class="animate-fade-in">
+                <!-- Question content injected here dynamically -->
+            </div>
+
+            <!-- Pagination Navigation -->
+            <div class="glass-panel p-4 sm:p-6 rounded-3xl mt-6 flex flex-wrap sm:flex-nowrap items-center justify-between border border-slate-200 gap-4">
+                
+                <button type="button" id="btn-prev" onclick="portal.prevQuestion()" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-right"></i> <span>السابق</span>
+                </button>
+                
+                <div id="section-indicator" class="text-xs font-black text-slate-400 hidden sm:block truncate mx-4 text-center">
+                    معيار / قسم
+                </div>
+
+                <div class="w-full sm:w-auto flex flex-col-reverse sm:flex-row gap-3">
+                    <button type="button" id="btn-next" onclick="portal.nextQuestion()" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-600 font-black text-sm transition shadow-sm flex items-center justify-center gap-2">
+                        <span id="btn-next-text">تخطي مؤقتاً</span> <i class="fa-solid fa-angles-left text-[10px]"></i>
+                    </button>
+
+                    <button type="button" id="btn-submit" onclick="portal.submitTestConfirm()" class="hidden w-full sm:w-auto px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm transition shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2">
+                        <span>اعتماد وتسليم</span> <i class="fa-solid fa-check-double"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- VIEW 4: COMPLETED -->
+        <div id="view-completed" class="w-full max-w-md hidden space-y-6 mt-20 text-center animate-fade-in">
+            <div class="w-24 h-24 mx-auto rounded-full bg-emerald-100 text-emerald-500 flex items-center justify-center text-5xl shadow-inner mb-6">
+                <i class="fa-solid fa-award"></i>
+            </div>
+            <h2 class="text-3xl font-black text-slate-900">تم الإنجاز بنجاح!</h2>
+            <p class="text-sm text-slate-500 font-semibold leading-relaxed">أحسنت أيها الموهوب <span id="finish-name" class="text-brand-600 font-black"></span>.<br>تم تسجيل إجاباتك ومهاراتك في النظام بأمان.</p>
+            
+            <div id="score-card" class="hidden glass-panel mt-6 p-6 rounded-3xl border border-emerald-100 bg-emerald-50/50 relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-emerald-500/10 text-6xl transform rotate-12"><i class="fa-solid fa-lightbulb"></i></div>
+                <div class="relative z-10">
+                    <div class="text-[11px] font-bold text-emerald-600 mb-1">نتيجتك في هذا البرنامج هي:</div>
+                    <div class="text-4xl font-black text-emerald-500" id="score-display">-- / --</div>
+                    <div class="text-xs font-bold text-amber-500 mt-3 bg-white/60 p-2 rounded-xl inline-block shadow-sm">
+                        <i class="fa-solid fa-lightbulb"></i> اكتسبت <span id="final-points" class="font-black text-amber-600">0</span> نقاط إنجاز
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="location.reload()" class="mt-8 px-6 py-3 rounded-xl border-2 border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition shadow-sm">العودة لقائمة البرامج</button>
+        </div>
+
+    </main>
+
+    <script>
+        // إعدادات الاتصال بقاعدة البيانات Firebase
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCIW17B6y6sG_bdUFqF7FWoVIY9ynXv1B4", 
+            authDomain: "myschoolproject-4ad92.firebaseapp.com", 
+            databaseURL: "https://myschoolproject-4ad92-default-rtdb.firebaseio.com", 
+            projectId: "myschoolproject-4ad92" 
+        };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const database = firebase.database();
+
+        class TestPortal {
+            constructor() {
+                this.allTests = [];
+                this.currentTest = null;
+                this.takerId = "";
+                this.takerName = "";
+                
+                // Pagination and State
+                this.flatQuestions = [];
+                this.currentQuestionIndex = 0;
+                this.totalQuestions = 0;
+                
+                // Data Storage
+                this.userAnswers = {}; // { 'q_0_1': 'Answer', ... }
+                this.currentPoints = 0;
+                
+                this.timerInterval = null;
+                this.timeRemaining = 0;
+
+                this.initData();
+            }
+
+            initData() {
+                // جلب الداتا سحابياً من Firebase مع المسار الصحيح والمطابق للبوابة الأخرى
+                database.ref('gifted_training_data_v1').on('value', snap => {
+                    const data = snap.val();
+                    if(data) {
+                        this.allTests = Array.isArray(data) ? data : Object.values(data);
+                        // تحديث واجهة البرامج فوراً إذا كان المستخدم قد سجل دخوله مسبقاً
+                        if (this.takerId && document.getElementById('tests-box').classList.contains('hidden') === false) {
+                            this.renderProgramsList();
+                        }
+                    } else {
+                        // الاعتماد على التخزين المحلي كنسخة احتياطية في حالة عدم توفر السحابة
+                        const localData = localStorage.getItem('gifted_training_data_v1');
+                        if (localData) {
+                            this.allTests = JSON.parse(localData);
+                        }
+                    }
+                });
+            }
+
+            loginAndFetchTests(event) {
+                const username = document.getElementById('taker-username').value.trim().toLowerCase();
+                const errorEl = document.getElementById('login-error');
+                
+                if(!username) {
+                    errorEl.textContent = "الرجاء إدخال اسم المستخدم.";
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                errorEl.classList.add('hidden');
+                const btn = event.currentTarget;
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>جاري التحقق...</span>`;
+                btn.disabled = true;
+
+                // التحقق في الطلاب أولاً
+                database.ref('students').orderByChild('studentUser').equalTo(username).once('value')
+                .then(snap => {
+                    if (snap.exists()) {
+                        const data = snap.val();
+                        const key = Object.keys(data)[0];
+                        this.processLogin(key, data[key].studentName);
+                    } else {
+                        // البحث في المعلمين إذا لزم الأمر
+                        return database.ref('assignments').orderByChild('teacherUser').equalTo(username).once('value');
+                    }
+                })
+                .then(snap => {
+                    if (snap && snap.exists()) {
+                        const data = snap.val();
+                        const key = Object.keys(data)[0];
+                        this.processLogin(key, data[key].teacherName);
+                    } else if (snap && !snap.exists()) {
+                        errorEl.textContent = "اسم المستخدم غير صحيح أو غير مسجل في النظام.";
+                        errorEl.classList.remove('hidden');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    errorEl.textContent = "حدث خطأ في الاتصال بقاعدة البيانات. تأكد من اتصالك بالإنترنت.";
+                    errorEl.classList.remove('hidden');
+                })
+                .finally(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                });
+            }
+
+            processLogin(id, name) {
+                this.takerId = id;
+                this.takerName = name;
+                
+                document.getElementById('login-box').classList.add('hidden');
+                document.getElementById('welcome-name').textContent = `مرحباً بك أيها الموهوب: ${name}`;
+                document.getElementById('tests-box').classList.remove('hidden');
+
+                this.renderProgramsList();
+            }
+
+            logout() {
+                this.takerId = "";
+                this.takerName = "";
+                document.getElementById('taker-username').value = "";
+                document.getElementById('tests-box').classList.add('hidden');
+                document.getElementById('login-box').classList.remove('hidden');
+            }
+
+            // توليد بطاقات البرامج التدريبية
+            renderProgramsList() {
+                const container = document.getElementById('programs-grid');
+                container.innerHTML = '';
+
+                // تصفية البرامج المتاحة والمصرح بها
+                const userTests = this.allTests.filter(test => {
+                    const isActive = test.status !== 'closed';
+                    const hasPermission = test.permissions && test.permissions.selectedIds && test.permissions.selectedIds.includes(this.takerId);
+                    return isActive && hasPermission;
+                });
+
+                if(userTests.length === 0) {
+                    container.innerHTML = `<div class="col-span-full text-center p-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-sm text-slate-500 font-bold">لا توجد برامج مخصصة لك حالياً.</div>`;
+                    return;
+                }
+
+                userTests.forEach(test => {
+                    // التحقق من حالة الإنجاز
+                    const studentResult = (test.results || []).find(r => r.studentName === this.takerName);
+                    const isCompleted = !!studentResult;
+                    
+                    // حساب المقاييس
+                    const totalWeight = test.targetWeight || test.totalWeight || 100;
+                    const earnedScore = isCompleted ? studentResult.totalScore : 0;
+                    const completionPercentage = isCompleted ? Math.min(100, Math.round((earnedScore / totalWeight) * 100)) : 0;
+                    
+                    let qCount = 0;
+                    test.standardsSections.forEach(s => qCount += s.questions.length);
+
+                    // التنسيقات بناءً على الحالة
+                    const statusBadge = isCompleted 
+                        ? `<span class="px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg text-[9px] font-black"><i class="fa-solid fa-check-circle"></i> مكتمل</span>`
+                        : `<span class="px-2.5 py-1 bg-brand-50 text-brand-600 border border-brand-200 rounded-lg text-[9px] font-black"><i class="fa-solid fa-play"></i> متاح للبدء</span>`;
+                    
+                    const cardClass = isCompleted 
+                        ? 'border-emerald-200 bg-emerald-50/20 opacity-80 cursor-default' 
+                        : 'border-slate-200 bg-white hover:border-brand-400 hover:shadow-lg cursor-pointer transition-all duration-300 transform hover:-translate-y-1';
+                    
+                    const onClickAttr = isCompleted 
+                        ? `onclick="alert('لقد قمت بإنجاز هذا البرنامج مسبقاً بنسبة ${completionPercentage}% 🌟')"` 
+                        : `onclick="portal.startTestIntro(${test.id})"`;
+
+                    const html = `
+                        <div class="rounded-2xl p-5 border ${cardClass} relative flex flex-col justify-between h-full" ${onClickAttr}>
+                            <div>
+                                <div class="flex justify-between items-start mb-4">
+                                    ${statusBadge}
+                                    <div class="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 text-sm shadow-inner border border-slate-100">
+                                        <i class="fa-solid fa-lightbulb"></i>
+                                    </div>
+                                </div>
+                                <h4 class="text-sm font-black text-slate-800 leading-snug mb-1.5">${test.title}</h4>
+                                <p class="text-[10px] font-bold text-slate-500 mb-5"><i class="fa-solid fa-layer-group text-slate-400 ml-1"></i> ${test.unitName}</p>
+                            </div>
+                            
+                            <div class="mt-auto space-y-4">
+                                <!-- Points & Details -->
+                                <div class="grid grid-cols-3 gap-2 bg-slate-50 rounded-xl p-2.5 border border-slate-100 text-center">
+                                    <div>
+                                        <div class="text-[9px] font-bold text-slate-400 mb-0.5">الزمن</div>
+                                        <div class="text-[11px] font-black text-slate-700">${test.duration} د</div>
+                                    </div>
+                                    <div class="border-x border-slate-200">
+                                        <div class="text-[9px] font-bold text-slate-400 mb-0.5">التحديات</div>
+                                        <div class="text-[11px] font-black text-slate-700">${qCount}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-[9px] font-bold text-slate-400 mb-0.5">النقاط</div>
+                                        <div class="text-[11px] font-black text-amber-600">${isCompleted ? earnedScore + '/' + totalWeight : totalWeight}</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Progress Bar -->
+                                <div class="space-y-1.5 pt-1">
+                                    <div class="flex justify-between text-[9px] font-black text-slate-500">
+                                        <span>نسبة الإنجاز</span>
+                                        <span>${completionPercentage}%</span>
+                                    </div>
+                                    <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="h-full ${isCompleted ? 'bg-emerald-500' : 'bg-brand-500'} progress-fill" style="width: ${completionPercentage}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', html);
+                });
+            }
+
+            switchView(viewId) {
+                ['view-selection', 'view-intro', 'view-test', 'view-completed'].forEach(id => {
+                    document.getElementById(id).classList.add('hidden');
+                });
+                document.getElementById(viewId).classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            startTestIntro(testId) {
+                if(!this.takerId) { alert("الرجاء تسجيل الدخول أولاً."); return; }
+                if(!testId) return;
+
+                this.currentTest = this.allTests.find(t => t.id == testId);
+                if(!this.currentTest) return;
+
+                // تسجيل اطلاع الطالب على البرنامج سحابياً (لظهوره لدى الإدارة كـ "اطلع ولم يحل")
+                if (!this.currentTest.viewedBy) this.currentTest.viewedBy = {};
+                if (!this.currentTest.viewedBy[this.takerId]) {
+                    this.currentTest.viewedBy[this.takerId] = true;
+                    // تحديث السحابة ليعلم المعلم فوراً بالمسار الصحيح والمطابق للبوابة الأخرى
+                    database.ref('gifted_training_data_v1').set(this.allTests);
+                }
+
+                document.getElementById('intro-badge').textContent = this.currentTest.type === 'test' ? 'برنامج موهوبين' : 'مهمة تعليمية (شرح تفاعلي)';
+                document.getElementById('intro-title').textContent = this.currentTest.title;
+                document.getElementById('intro-unit').textContent = this.currentTest.unitName;
+                document.getElementById('intro-text').textContent = this.currentTest.introText || 'لا توجد تعليمات إضافية لهذا البرنامج.';
+                document.getElementById('intro-duration').textContent = `${this.currentTest.duration} دقيقة`;
+                
+                // Flattening Questions Array
+                this.flatQuestions = [];
+                this.currentTest.standardsSections.forEach((section, sIdx) => {
+                    section.questions.forEach((q, qIdx) => {
+                        this.flatQuestions.push({
+                            sectionTitle: section.standardTitle,
+                            sIdx: sIdx,
+                            qIdx: qIdx,
+                            data: q
+                        });
+                    });
+                });
+                
+                this.totalQuestions = this.flatQuestions.length;
+                document.getElementById('intro-q-count').textContent = this.totalQuestions;
+
+                this.switchView('view-intro');
+            }
+
+            goBackToSelection() {
+                this.switchView('view-selection');
+            }
+
+            beginTest() {
+                this.currentQuestionIndex = 0;
+                this.userAnswers = {};
+                this.currentPoints = 0;
+                
+                this.updateProgressAndPoints();
+                this.renderCurrentQuestion();
+                
+                this.switchView('view-test');
+                document.getElementById('test-header').classList.remove('hidden');
+                
+                document.getElementById('header-title').textContent = this.currentTest.title;
+                document.getElementById('header-subtitle').textContent = this.currentTest.unitName;
+
+                this.timeRemaining = this.currentTest.duration * 60;
+                this.startTimer();
+            }
+
+            startTimer() {
+                this.updateTimerDisplay();
+                this.timerInterval = setInterval(() => {
+                    this.timeRemaining--;
+                    this.updateTimerDisplay();
+                    if(this.timeRemaining <= 0) {
+                        clearInterval(this.timerInterval);
+                        alert("انتهى الوقت المخصص! سيتم تسليم إجاباتك الحالية تلقائياً.");
+                        this.submitTest(null);
+                    }
+                }, 1000);
+            }
+
+            updateTimerDisplay() {
+                const m = Math.floor(this.timeRemaining / 60).toString().padStart(2, '0');
+                const s = (this.timeRemaining % 60).toString().padStart(2, '0');
+                const timerBox = document.getElementById('timer-box');
+                const display = document.getElementById('timer-display');
+                display.textContent = `${m}:${s}`;
+
+                if(this.timeRemaining < 120) { 
+                    timerBox.classList.replace('bg-brand-50', 'bg-rose-50');
+                    timerBox.classList.replace('border-brand-100', 'border-rose-200');
+                    timerBox.classList.replace('text-brand-700', 'text-rose-600');
+                    display.classList.add('animate-pulse');
+                }
+            }
+
+            // ---------- PAGINATION RENDER LOGIC ---------- //
+
+            renderCurrentQuestion() {
+                const container = document.getElementById('single-question-container');
+                container.innerHTML = '';
+                
+                if (this.currentQuestionIndex < 0 || this.currentQuestionIndex >= this.totalQuestions) return;
+
+                const qObj = this.flatQuestions[this.currentQuestionIndex];
+                const q = qObj.data;
+                const qId = `q_${qObj.sIdx}_${qObj.qIdx}`;
+                const savedAnswer = this.userAnswers[qId] || null;
+
+                document.getElementById('section-indicator').textContent = qObj.sectionTitle;
+
+                const qDiv = document.createElement('div');
+                qDiv.className = "glass-panel rounded-[2rem] overflow-hidden border border-slate-200 shadow-sm p-6 sm:p-8 animate-fade-in";
+                
+                let qDivHTML = '';
+                
+                // الهيدر المشترك للأسئلة
+                const headerHTML = `
+                    <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+                        <span class="w-10 h-10 rounded-full bg-brand-100 text-brand-700 font-black text-lg flex items-center justify-center shrink-0 shadow-sm">${this.currentQuestionIndex + 1}</span>
+                        <span class="text-xs font-bold text-slate-400">من أصل ${this.totalQuestions} تحدي / خطوة</span>
+                    </div>
+                `;
+
+                // --- عرض "لوحة شرح تفاعلية" ---
+                if (q.qType === 'لوحة شرح تفاعلية') {
+                    let steps = [];
+                    
+                    if (q.mediaBase64) {
+                        let mHtml = q.mediaBase64.startsWith('data:image') 
+                            ? `<img src="${q.mediaBase64}" class="w-full max-w-2xl rounded-2xl shadow-md border border-slate-200 object-contain max-h-80 mx-auto" />`
+                            : `<video src="${q.mediaBase64}" controls controlsList="nodownload" class="w-full max-w-3xl rounded-2xl shadow-xl border border-slate-800 bg-black mx-auto"></video>`;
+                        steps.push(`<div class="text-center p-4 bg-slate-50/50 rounded-3xl border border-slate-100">${mHtml}</div>`);
+                    }
+                    
+                    if (q.correctAnswer && q.correctAnswer.trim() !== '') {
+                        const words = q.correctAnswer.trim().split(/\s+/);
+                        const animatedWords = words.map((w, i) => `<span class="word-animate inline-block mx-1" style="animation-delay: ${(i * 0.1)}s">${w}</span>`).join(' ');
+                        steps.push(`
+                            <div class="p-8 sm:p-10 bg-gradient-to-br from-indigo-50 to-brand-50 border border-brand-200 rounded-[2rem] shadow-inner text-center relative overflow-hidden">
+                                <div class="absolute -right-6 -top-6 text-brand-500/10 text-8xl transform rotate-12"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                                <div class="text-xl md:text-3xl font-black text-brand-800 leading-loose relative z-10" style="line-height: 2;">
+                                    ${animatedWords}
+                                </div>
+                            </div>
+                        `);
+                    }
+                    
+                    if (q.explanation && q.explanation.trim() !== '') {
+                        const words = q.explanation.trim().split(/\s+/);
+                        const animatedWords = words.map((w, i) => `<span class="word-animate inline-block mx-1" style="animation-delay: ${(i * 0.05)}s">${w}</span>`).join(' ');
+                        steps.push(`
+                            <div class="relative mt-2">
+                                <div class="absolute -top-3.5 right-6 bg-gradient-to-r from-amber-500 to-orange-400 text-white text-[11px] font-black px-4 py-1.5 rounded-full shadow-md flex items-center gap-1.5 z-10 border border-amber-300">
+                                    <i class="fa-solid fa-lightbulb animate-pulse text-amber-100"></i> إضاءة إثرائية
+                                </div>
+                                <div class="p-6 pt-7 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl shadow-sm text-amber-900 text-sm font-bold leading-loose relative overflow-hidden text-center">
+                                    <div class="absolute -left-6 -bottom-6 text-amber-500/10 text-7xl transform -rotate-12"><i class="fa-solid fa-lightbulb"></i></div>
+                                    <div class="relative z-10" style="line-height: 2;">
+                                        ${animatedWords}
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+                    }
+
+                    let interactiveHTML = `
+                        ${headerHTML}
+                        <h3 class="text-lg md:text-xl font-black text-slate-800 leading-loose mb-6">${q.text}</h3>
+                        <div class="interactive-lesson-container" id="interactive_${qId}">
+                    `;
+                    
+                    if (steps.length === 0) {
+                        interactiveHTML += `<div class="text-center text-slate-500 font-bold p-8">لا يوجد محتوى مضاف لهذه اللوحة.</div>`;
+                        setTimeout(() => this.markAnswered(qId, 'تمت القراءة', q.questionWeight), 500);
+                    } else {
+                        steps.forEach((stepHtml, idx) => {
+                            let isLast = idx === steps.length - 1;
+                            let displayClass = idx === 0 ? 'block' : 'hidden';
+                            
+                            let btnAction = isLast 
+                                ? `portal.finishEduStep('${qId}', ${q.questionWeight}, this)`
+                                : `portal.showEduStep('${qId}', ${idx + 1})`;
+                            
+                            let btnText = isLast ? 'أتممت القراءة <i class="fa-solid fa-check mr-1"></i>' : 'الخطوة التالية <i class="fa-solid fa-arrow-left mr-1"></i>';
+                            let btnColor = isLast ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-brand-600 hover:bg-brand-700';
+                            let stepHint = steps.length > 1 ? `<div class="text-[10px] text-brand-600 bg-brand-50 inline-block px-3 py-1 rounded-full font-bold mb-4 border border-brand-100">خطوة التركيز ${idx + 1} من ${steps.length}</div>` : '';
+
+                            interactiveHTML += `
+                                <div id="step_${qId}_${idx}" class="edu-step ${displayClass} animate-fade-in text-center transition-all duration-300 w-full">
+                                    ${stepHint}
+                                    ${stepHtml}
+                                    <div class="mt-8 flex justify-center">
+                                        <button type="button" onclick="${btnAction}" class="px-8 py-3.5 rounded-xl text-white font-black text-sm shadow-md transition ${btnColor} flex items-center justify-center gap-2 transform hover:-translate-y-0.5">
+                                            ${btnText}
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                    interactiveHTML += `</div>`;
+                    qDivHTML = interactiveHTML;
+                }
+                // --- الأسئلة العادية ---
+                else {
+                    let mediaHTML = '';
+                    if (q.mediaBase64) {
+                        if (q.mediaBase64.startsWith('data:image')) {
+                            mediaHTML = `
+                                <div class="w-full flex justify-center mb-6">
+                                    <img src="${q.mediaBase64}" class="w-full max-w-2xl rounded-2xl shadow-md border border-slate-200 object-contain max-h-80" />
+                                </div>
+                            `;
+                        } else if (q.mediaBase64.startsWith('data:video')) {
+                            mediaHTML = `
+                                <div class="w-full flex justify-center mb-6 media-player-container">
+                                    <video src="${q.mediaBase64}" controls controlsList="nodownload" class="w-full max-w-3xl rounded-2xl shadow-xl border border-slate-800 bg-black"></video>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    let inputHTML = '';
+                    if(q.qType.includes('متعدد')) {
+                        inputHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">`;
+                        q.options.forEach((opt) => {
+                            const isChecked = savedAnswer === opt ? 'checked' : '';
+                            inputHTML += `
+                                <label class="option-label flex items-center gap-4 p-4 rounded-2xl border border-slate-200 bg-slate-50 cursor-pointer hover:border-brand-400 hover:bg-white shadow-sm transition-all duration-200">
+                                    <input type="radio" name="${qId}" value="${opt}" ${isChecked} class="custom-radio shrink-0" onchange="portal.markAnswered('${qId}', this.value, ${q.questionWeight})">
+                                    <span class="text-sm font-bold text-slate-700">${opt}</span>
+                                </label>
+                            `;
+                        });
+                        inputHTML += `</div>`;
+                    } 
+                    else if(q.qType === 'صواب وخطأ') {
+                        inputHTML = `
+                            <div class="flex gap-4 mt-6">
+                                <label class="option-label flex-1 flex justify-center items-center gap-3 p-5 rounded-2xl border border-slate-200 bg-slate-50 cursor-pointer shadow-sm hover:border-emerald-400 transition-all duration-200">
+                                    <input type="radio" name="${qId}" value="صواب" ${savedAnswer === 'صواب' ? 'checked' : ''} class="custom-radio shrink-0" onchange="portal.markAnswered('${qId}', this.value, ${q.questionWeight})">
+                                    <span class="text-base font-black text-emerald-600">صواب</span>
+                                </label>
+                                <label class="option-label flex-1 flex justify-center items-center gap-3 p-5 rounded-2xl border border-slate-200 bg-slate-50 cursor-pointer shadow-sm hover:border-rose-400 transition-all duration-200">
+                                    <input type="radio" name="${qId}" value="خطأ" ${savedAnswer === 'خطأ' ? 'checked' : ''} class="custom-radio shrink-0" onchange="portal.markAnswered('${qId}', this.value, ${q.questionWeight})">
+                                    <span class="text-base font-black text-rose-600">خطأ</span>
+                                </label>
+                            </div>
+                        `;
+                    }
+                    else if(q.qType === 'سلم تقدير خماسي') {
+                        const scale = ["موافق بشدة", "موافق", "محايد", "غير موافق", "غير موافق بشدة"];
+                        inputHTML = `<div class="flex flex-col sm:flex-row gap-3 mt-6 bg-slate-50 p-3 rounded-2xl border border-slate-100">`;
+                        scale.forEach(s => {
+                            inputHTML += `
+                                <label class="scale-box p-4 rounded-xl border border-transparent bg-white shadow-sm flex flex-col items-center justify-center gap-3">
+                                    <input type="radio" name="${qId}" value="${s}" ${savedAnswer === s ? 'checked' : ''} class="custom-radio" onchange="portal.markAnswered('${qId}', this.value, ${q.questionWeight})">
+                                    <span class="text-[11px] font-black text-slate-700">${s}</span>
+                                </label>
+                            `;
+                        });
+                        inputHTML += `</div>`;
+                    }
+                    else if(q.qType === 'سلم تقدير ثلاثي') {
+                        const scale = ["نعم", "إلى حد ما", "لا"];
+                        inputHTML = `<div class="flex gap-3 mt-6 bg-slate-50 p-3 rounded-2xl border border-slate-100">`;
+                        scale.forEach(s => {
+                            inputHTML += `
+                                <label class="scale-box p-4 rounded-xl border border-transparent bg-white shadow-sm flex flex-col items-center justify-center gap-3">
+                                    <input type="radio" name="${qId}" value="${s}" ${savedAnswer === s ? 'checked' : ''} class="custom-radio" onchange="portal.markAnswered('${qId}', this.value, ${q.questionWeight})">
+                                    <span class="text-[11px] font-black text-slate-700">${s}</span>
+                                </label>
+                            `;
+                        });
+                        inputHTML += `</div>`;
+                    }
+                    else {
+                        inputHTML = `
+                            <div class="mt-6">
+                                <textarea name="${qId}" rows="3" class="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50 text-sm font-bold transition resize-none shadow-inner" placeholder="اكتب إجابتك هنا..." oninput="portal.markAnsweredText('${qId}', this.value, ${q.questionWeight})">${savedAnswer || ''}</textarea>
+                            </div>
+                        `;
+                    }
+
+                    let expHTML = '';
+                    if (q.explanation && q.explanation.trim() !== '') {
+                        const words = q.explanation.trim().split(/\s+/);
+                        const animatedWords = words.map((w, i) => `<span class="word-animate" style="animation-delay: ${(i * 0.05)}s">${w}</span>`).join(' ');
+                        const expClass = savedAnswer ? 'block' : 'hidden';
+                        
+                        expHTML = `
+                        <div id="exp_${qId}" class="${expClass} mt-8 relative">
+                            <div class="absolute -top-3.5 right-6 bg-gradient-to-r from-amber-500 to-orange-400 text-white text-[11px] font-black px-4 py-1.5 rounded-full shadow-md flex items-center gap-1.5 z-10 border border-amber-300">
+                                <i class="fa-solid fa-lightbulb animate-pulse text-amber-100"></i> إضاءة إثرائية
+                            </div>
+                            <div class="p-6 pt-7 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl shadow-sm text-amber-900 text-sm font-bold leading-loose relative overflow-hidden">
+                                <div class="absolute -left-6 -bottom-6 text-amber-500/10 text-7xl transform -rotate-12"><i class="fa-solid fa-lightbulb"></i></div>
+                                <div class="relative z-10" style="word-spacing: 2px;">
+                                    ${animatedWords}
+                                </div>
+                            </div>
+                        </div>`;
+                    }
+
+                    qDivHTML = `
+                        ${headerHTML}
+                        ${mediaHTML}
+                        <h3 class="text-lg md:text-xl font-black text-slate-800 leading-loose">${q.text}</h3>
+                        ${inputHTML}
+                        ${expHTML}
+                    `;
+                }
+
+                qDiv.innerHTML = qDivHTML;
+                container.appendChild(qDiv);
+                this.updateNavigationButtons(savedAnswer !== null);
+            }
+
+            showEduStep(qId, nextStepIdx) {
+                const prevStep = document.getElementById(`step_${qId}_${nextStepIdx - 1}`);
+                if(prevStep) {
+                    prevStep.classList.remove('block');
+                    prevStep.classList.add('hidden');
+                }
+                
+                const nextStep = document.getElementById(`step_${qId}_${nextStepIdx}`);
+                if(nextStep) {
+                    nextStep.classList.remove('hidden');
+                    nextStep.classList.add('block');
+                }
+            }
+
+            finishEduStep(qId, weight, btn) {
+                this.markAnswered(qId, 'تمت القراءة', weight);
+                
+                if(btn) {
+                    btn.innerHTML = 'تم الإنجاز <i class="fa-solid fa-check-double mr-1"></i>';
+                    btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                    btn.classList.add('bg-slate-300', 'text-slate-600', 'cursor-not-allowed');
+                    btn.disabled = true;
+                }
+                
+                setTimeout(() => this.nextQuestion(), 800);
+            }
+
+            markAnswered(qId, value, weight) {
+                if (!this.userAnswers[qId]) {
+                    this.currentPoints += weight;
+                }
+                
+                this.userAnswers[qId] = value;
+                
+                const expDiv = document.getElementById(`exp_${qId}`);
+                if (expDiv && expDiv.classList.contains('hidden')) {
+                    expDiv.classList.remove('hidden');
+                }
+
+                this.updateProgressAndPoints();
+                this.updateNavigationButtons(true);
+            }
+
+            markAnsweredText(qId, value, weight) {
+                const trimmed = value.trim();
+                const expDiv = document.getElementById(`exp_${qId}`);
+
+                if (trimmed.length > 0) {
+                    if (!this.userAnswers[qId]) this.currentPoints += weight;
+                    this.userAnswers[qId] = trimmed;
+                    if (expDiv && expDiv.classList.contains('hidden')) {
+                        expDiv.classList.remove('hidden');
+                    }
+                } else {
+                    if (this.userAnswers[qId]) this.currentPoints -= weight;
+                    delete this.userAnswers[qId];
+                    if (expDiv) expDiv.classList.add('hidden');
+                }
+                
+                this.updateProgressAndPoints();
+                this.updateNavigationButtons(trimmed.length > 0);
+            }
+
+            updateProgressAndPoints() {
+                const count = Object.keys(this.userAnswers).length;
+                const percentage = (count / this.totalQuestions) * 100;
+                
+                document.getElementById('progress-bar').style.width = `${percentage}%`;
+                document.getElementById('progress-text').textContent = `${count} / ${this.totalQuestions}`;
+                
+                const pBox = document.getElementById('points-box');
+                document.getElementById('points-display').textContent = this.currentPoints;
+                
+                pBox.classList.add('scale-110', 'bg-amber-100');
+                setTimeout(() => pBox.classList.remove('scale-110', 'bg-amber-100'), 300);
+
+                if(percentage === 100) {
+                    document.getElementById('progress-bar').classList.replace('bg-brand-600', 'bg-emerald-500');
+                } else {
+                    document.getElementById('progress-bar').classList.replace('bg-emerald-500', 'bg-brand-600');
+                }
+            }
+
+            updateNavigationButtons(isAnswered) {
+                const btnPrev = document.getElementById('btn-prev');
+                const btnNext = document.getElementById('btn-next');
+                const btnNextText = document.getElementById('btn-next-text');
+                const btnSubmit = document.getElementById('btn-submit');
+
+                if (this.currentQuestionIndex === 0) {
+                    btnPrev.classList.add('hidden');
+                } else {
+                    btnPrev.classList.remove('hidden');
+                }
+
+                if (this.currentQuestionIndex === this.totalQuestions - 1) {
+                    btnNext.classList.add('hidden');
+                    btnSubmit.classList.remove('hidden');
+                    
+                    if (isAnswered || Object.keys(this.userAnswers).length === this.totalQuestions) {
+                        btnSubmit.classList.remove('opacity-50');
+                    } else {
+                        btnSubmit.classList.add('opacity-50');
+                    }
+                } else {
+                    btnNext.classList.remove('hidden');
+                    btnSubmit.classList.add('hidden');
+                    
+                    if (isAnswered) {
+                        btnNext.classList.replace('bg-slate-200', 'bg-brand-600');
+                        btnNext.classList.replace('text-slate-600', 'text-white');
+                        btnNext.classList.replace('hover:bg-slate-300', 'hover:bg-brand-700');
+                        btnNextText.textContent = "التالي";
+                        btnNext.querySelector('i').className = "fa-solid fa-arrow-left text-sm";
+                    } else {
+                        btnNext.classList.replace('bg-brand-600', 'bg-slate-200');
+                        btnNext.classList.replace('text-white', 'text-slate-600');
+                        btnNext.classList.replace('hover:bg-brand-700', 'hover:bg-slate-300');
+                        btnNextText.textContent = "تخطي مؤقتاً";
+                        btnNext.querySelector('i').className = "fa-solid fa-angles-left text-[10px]";
+                    }
+                }
+            }
+
+            nextQuestion() {
+                if (this.currentQuestionIndex < this.totalQuestions - 1) {
+                    this.currentQuestionIndex++;
+                    this.renderCurrentQuestion();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+
+            prevQuestion() {
+                if (this.currentQuestionIndex > 0) {
+                    this.currentQuestionIndex--;
+                    this.renderCurrentQuestion();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+
+            submitTestConfirm() {
+                const answeredCount = Object.keys(this.userAnswers).length;
+                if (answeredCount < this.totalQuestions) {
+                    if(!confirm(`لم تقم بالإجابة على جميع التحديات (${answeredCount} من ${this.totalQuestions}). هل أنت متأكد من رغبتك في التسليم النهائي؟`)) {
+                        return;
+                    }
+                }
+                this.submitTest(null);
+            }
+
+            saveResultToDB(achievedScore, standardScores) {
+                // تحديث المصفوفة الحالية
+                const testIndex = this.allTests.findIndex(t => t.id === this.currentTest.id);
+                
+                if(testIndex !== -1) {
+                    if(!this.allTests[testIndex].results) this.allTests[testIndex].results = [];
+                    
+                    const resultObj = {
+                        studentName: this.takerName,
+                        totalScore: achievedScore,
+                        standardScores: standardScores,
+                        date: new Date().toISOString()
+                    };
+                    
+                    const existingIdx = this.allTests[testIndex].results.findIndex(r => r.studentName === this.takerName);
+                    if(existingIdx !== -1) {
+                        this.allTests[testIndex].results[existingIdx] = resultObj;
+                    } else {
+                        this.allTests[testIndex].results.push(resultObj);
+                    }
+                    
+                    // الرفع للحفظ سحابياً في Firebase مباشرة بالمسار الصحيح والمطابق للبوابة الأخرى
+                    database.ref('gifted_training_data_v1').set(this.allTests)
+                    .then(() => console.log("تم حفظ نتائج الطالب سحابياً."))
+                    .catch(err => console.error("خطأ أثناء الحفظ السحابي: ", err));
+
+                    // حفظ نسخة محلية احتياطية
+                    localStorage.setItem('gifted_training_data_v1', JSON.stringify(this.allTests));
+                }
+            }
+
+            submitTest(event) {
+                if(event) event.preventDefault();
+                clearInterval(this.timerInterval);
+                
+                let achievedScore = 0;
+                let totalScore = this.currentTest.totalWeight || this.currentTest.targetWeight || 100;
+                let standardScores = {};
+
+                this.currentTest.standardsSections.forEach((sec, sIdx) => {
+                    let secScore = 0;
+                    sec.questions.forEach((q, qIdx) => {
+                        const qId = `q_${sIdx}_${qIdx}`;
+                        const userAnswer = this.userAnswers[qId];
+                        
+                        if (userAnswer) {
+                            if (this.currentTest.type === 'test') {
+                                if (userAnswer === q.correctAnswer) {
+                                    achievedScore += q.questionWeight;
+                                    secScore += q.questionWeight;
+                                }
+                            } else {
+                                achievedScore += q.questionWeight;
+                                secScore += q.questionWeight;
+                            }
+                        }
+                    });
+                    standardScores[sec.standardTitle] = secScore;
+                });
+
+                if (this.currentTest.type === 'test') {
+                    document.getElementById('score-card').classList.remove('hidden');
+                    document.getElementById('score-display').textContent = `${achievedScore} / ${totalScore}`;
+                    document.getElementById('final-points').textContent = this.currentPoints;
+                }
+
+                this.saveResultToDB(achievedScore, standardScores);
+
+                document.getElementById('test-header').classList.add('hidden');
+                document.getElementById('view-test').classList.add('hidden');
+                document.getElementById('finish-name').textContent = this.takerName;
+                this.switchView('view-completed');
+            }
+        }
+
+        const portal = new TestPortal();
+    </script>
+</body>
+</html>
